@@ -223,6 +223,9 @@ The ``AutoGluonTabularRegressor`` exposes many options from
 * ``hyperparameter_tune_kwargs`` – options for AutoGluon's hyperparameter tuner.
 * ``eval_metric`` – metric used to select the best models.
 
+These values are forwarded directly to AutoGluon's ``TabularPredictor.fit``
+method.
+
 Example::
 
     "freqai": {
