@@ -218,6 +218,8 @@ The ``AutoGluonTabularRegressor`` exposes many options from
 ``freqai.model_training_parameters``. Common settings include:
 
 * ``time_limit`` – maximum training time in seconds.
+* ``num_bag_folds`` – number of folds used for bagging.
+* ``num_bag_sets`` – number of bagging repeats.
 * ``presets`` – AutoGluon preset string or list controlling model quality.
 * ``hyperparameters`` – dictionary defining the model search space.
 * ``hyperparameter_tune_kwargs`` – options for AutoGluon's hyperparameter tuner.
@@ -231,6 +233,8 @@ Example::
     "freqai": {
         "model_training_parameters": {
             "time_limit": 600,
+            "num_bag_folds": 3,
+            "num_bag_sets": 2,
             "presets": "medium_quality",
             "eval_metric": "mean_absolute_error",
             "hyperparameter_tune_kwargs": {
