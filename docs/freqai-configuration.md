@@ -239,6 +239,22 @@ Example::
         }
     }
 
+### AutoGluon TimeSeries training parameters
+
+The ``AutoGluonTimeSeriesPredictor`` wraps AutoGluon's
+``TimeSeriesPredictor`` and automatically converts the data into a
+``TimeSeriesDataFrame``.  In addition to the common settings above, it accepts
+``freq`` to specify the frequency of the time index.
+
+Example::
+
+    "freqai": {
+        "model_training_parameters": {
+            "freq": "1h",
+            "time_limit": 600
+        }
+    }
+
 There are also numerous online articles describing and comparing the algorithms. Some relatively lightweight examples would be [CatBoost vs. LightGBM vs. XGBoost — Which is the best algorithm?](https://towardsdatascience.com/catboost-vs-lightgbm-vs-xgboost-c80f40662924#:~:text=In%20CatBoost%2C%20symmetric%20trees%2C%20or,the%20same%20depth%20can%20differ.) and [XGBoost, LightGBM or CatBoost — which boosting algorithm should I use?](https://medium.com/riskified-technology/xgboost-lightgbm-or-catboost-which-boosting-algorithm-should-i-use-e7fda7bb36bc). Keep in mind that the performance of each model is highly dependent on the application and so any reported metrics might not be true for your particular use of the model.
 
 Apart from the models already available in FreqAI, it is also possible to customize and create your own prediction models using the `IFreqaiModel` class. You are encouraged to inherit `fit()`, `train()`, and `predict()` to customize various aspects of the training procedures. You can place custom FreqAI models in `user_data/freqaimodels` - and freqtrade will pick them up from there based on the provided `--freqaimodel` name - which has to correspond to the class name of your custom model.
