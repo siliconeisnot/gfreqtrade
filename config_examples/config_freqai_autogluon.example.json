@@ -81,7 +81,12 @@
             "test_size": 0.33,
             "random_state": 1
         },
-        "model_training_parameters": {}
+        "model_training_parameters": {
+            "time_limit": 600,
+            "num_bag_folds": 5,
+            "num_bag_sets": 1,
+            "presets": "medium_quality"
+        }
     },
     "bot_name": "",
     "force_entry_enable": true,
