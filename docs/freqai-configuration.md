@@ -226,7 +226,8 @@ The ``AutoGluonTabularRegressor`` exposes many options from
 * ``eval_metric`` – metric used to select the best models.
 
 These values are forwarded directly to AutoGluon's ``TabularPredictor.fit``
-method.
+method (and to ``TimeSeriesPredictor.fit`` when using
+``AutoGluonTimeSeriesPredictor``).
 
 Example::
 
@@ -250,15 +251,24 @@ Example::
 
 The ``AutoGluonTimeSeriesPredictor`` wraps AutoGluon's
 ``TimeSeriesPredictor`` and automatically converts the data into a
-``TimeSeriesDataFrame``.  In addition to the common settings above, it accepts
-``freq`` to specify the frequency of the time index.
+``TimeSeriesDataFrame``.  In addition to the common settings above, it forwards
+``time_limit``, ``presets``, ``hyperparameter_tune_kwargs`` and ``eval_metric``
+to ``TimeSeriesPredictor.fit``.  It also accepts ``freq`` to specify the
+frequency of the time index.
 
 Example::
 
     "freqai": {
         "model_training_parameters": {
             "freq": "1h",
-            "time_limit": 600
+            "time_limit": 600,
+            "presets": "medium_quality",
+            "eval_metric": "mean_absolute_error",
+            "hyperparameter_tune_kwargs": {
+                "num_trials": 5,
+                "scheduler": "local",
+                "searcher": "auto"
+            }
         }
     }
 
