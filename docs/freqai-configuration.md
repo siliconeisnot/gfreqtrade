@@ -245,6 +245,24 @@ Example::
             "hyperparameters": {"GBM": {}, "NN_TORCH": {}}
         }
     }
+    
+```
+
+#### Feature importance threshold
+
+AutoGluon models can optionally remove weak features after an initial training
+round.  Set ``model_training_parameters['fi_threshold']`` to a positive value to
+enable this behaviour.  After the first ``predictor.fit`` call FreqAI evaluates
+feature importances via ``predictor.feature_importance()`` and drops all
+features with an importance below the threshold before re-training the model.
+
+Example::
+
+    "freqai": {
+        "model_training_parameters": {
+            "fi_threshold": 0.01
+        }
+    }
 
 ### AutoGluon TimeSeries training parameters
 
