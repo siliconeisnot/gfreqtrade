@@ -53,4 +53,18 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
 
         predictor = TabularPredictor(label=dk.label_list[0], problem_type="regression")
         predictor = predictor.fit(train, tuning_data=tuning_data, **self.model_training_parameters)
+
+        fi_threshold = self.freqai_info.get("feature_importance_threshold", 0)
+        if fi_threshold > 0:
+            fi_df = predictor.feature_importance(train)
+            drop_features = fi_df[fi_df["importance"] < fi_threshold].index.tolist()
+            if drop_features:
+                train = train.drop(columns=drop_features)
+                if tuning_data is not None:
+                    tuning_data = tuning_data.drop(columns=drop_features)
+                predictor = TabularPredictor(label=dk.label_list[0], problem_type="regression")
+                predictor = predictor.fit(
+                    train, tuning_data=tuning_data, **self.model_training_parameters
+                )
+
         return predictor
