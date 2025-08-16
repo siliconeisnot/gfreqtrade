@@ -35,45 +35,71 @@ class BaseClassifierModel(IFreqaiModel):
 
         start_time = time()
 
-        # filter the features requested by user in the configuration file and elegantly handle NaNs
-        features_filtered, labels_filtered = dk.filter_features(
-            unfiltered_df,
-            dk.training_features_list,
-            dk.label_list,
-            training_filter=True,
-        )
-
-        start_date = unfiltered_df["date"].iloc[0].strftime("%Y-%m-%d")
-        end_date = unfiltered_df["date"].iloc[-1].strftime("%Y-%m-%d")
-        logger.info(
-            f"-------------------- Training on data from {start_date} to "
-            f"{end_date} --------------------"
-        )
-        # split data into train/test data.
-        dd = dk.make_train_test_datasets(features_filtered, labels_filtered)
-        if not self.freqai_info.get("fit_live_predictions_candles", 0) or not self.live:
-            dk.fit_labels()
-        dk.feature_pipeline = self.define_data_pipeline(threads=dk.thread_count)
-
-        (dd["train_features"], dd["train_labels"], dd["train_weights"]) = (
-            dk.feature_pipeline.fit_transform(
-                dd["train_features"], dd["train_labels"], dd["train_weights"]
+        threshold = self.ft_params.get("min_feature_importance", 0)
+        retrain = True
+        while retrain:
+            retrain = False
+            # filter the features requested by user in the configuration file and elegantly handle NaNs
+            features_filtered, labels_filtered = dk.filter_features(
+                unfiltered_df,
+                dk.training_features_list,
+                dk.label_list,
+                training_filter=True,
             )
-        )
 
-        if self.freqai_info.get("data_split_parameters", {}).get("test_size", 0.1) != 0:
-            (dd["test_features"], dd["test_labels"], dd["test_weights"]) = (
-                dk.feature_pipeline.transform(
-                    dd["test_features"], dd["test_labels"], dd["test_weights"]
+            start_date = unfiltered_df["date"].iloc[0].strftime("%Y-%m-%d")
+            end_date = unfiltered_df["date"].iloc[-1].strftime("%Y-%m-%d")
+            logger.info(
+                f"-------------------- Training on data from {start_date} to "
+                f"{end_date} --------------------"
+            )
+            # split data into train/test data.
+            dd = dk.make_train_test_datasets(features_filtered, labels_filtered)
+            if not self.freqai_info.get("fit_live_predictions_candles", 0) or not self.live:
+                dk.fit_labels()
+            dk.feature_pipeline = self.define_data_pipeline(threads=dk.thread_count)
+
+            (dd["train_features"], dd["train_labels"], dd["train_weights"]) = (
+                dk.feature_pipeline.fit_transform(
+                    dd["train_features"], dd["train_labels"], dd["train_weights"]
                 )
             )
 
-        logger.info(
-            f"Training model on {len(dk.data_dictionary['train_features'].columns)} features"
-        )
-        logger.info(f"Training model on {len(dd['train_features'])} data points")
+            if self.freqai_info.get("data_split_parameters", {}).get("test_size", 0.1) != 0:
+                (dd["test_features"], dd["test_labels"], dd["test_weights"]) = (
+                    dk.feature_pipeline.transform(
+                        dd["test_features"], dd["test_labels"], dd["test_weights"]
+                    )
+                )
 
-        model = self.fit(dd, dk)
+            logger.info(
+                f"Training model on {len(dk.data_dictionary['train_features'].columns)} features"
+            )
+            logger.info(f"Training model on {len(dd['train_features'])} data points")
+
+            model = self.fit(dd, dk)
+
+            if threshold > 0:
+                if hasattr(model, "get_feature_importance"):
+                    importance = model.get_feature_importance()
+                elif hasattr(model, "feature_importances_"):
+                    importance = model.feature_importances_
+                else:
+                    importance = None
+                if importance is not None:
+                    feat_names = dk.data_dictionary["train_features"].columns
+                    low_feats = [f for f, v in zip(feat_names, importance) if v < threshold]
+                    if low_feats:
+                        dk.training_features_list = [
+                            f for f in dk.training_features_list if f not in low_feats
+                        ]
+                        logger.info(
+                            "Dropping %d features below importance threshold %.3f: %s",
+                            len(low_feats),
+                            threshold,
+                            low_feats,
+                        )
+                        retrain = True
 
         end_time = time()
 

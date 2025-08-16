@@ -1213,6 +1213,14 @@ CONF_SCHEMA = {
                             "type": "integer",
                             "default": 0,
                         },
+                        "min_feature_importance": {
+                            "description": (
+                                "Drop features with importance lower than this threshold "
+                                "and retrain the model."
+                            ),
+                            "type": "number",
+                            "default": 0,
+                        },
                         "svm_params": {
                             "description": (
                                 "All parameters available in Sklearn's `SGDOneClassSVM()`."

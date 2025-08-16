@@ -23,6 +23,7 @@ from tests.conftest import (
 )
 from tests.freqai.conftest import (
     get_patched_freqai_strategy,
+    make_unfiltered_dataframe,
     make_rl_config,
     mock_pytorch_mlp_model_training_parameters,
 )
@@ -483,6 +484,19 @@ def test_plot_feature_importance(mocker, freqai_conf):
 
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}.html")
 
+    shutil.rmtree(Path(freqai.dk.full_path))
+
+
+def test_min_feature_importance_filter(mocker, freqai_conf):
+    freqai_conf["freqai"]["feature_parameters"].update({"min_feature_importance": 0.01})
+    freqai, unfiltered_dataframe = make_unfiltered_dataframe(mocker, freqai_conf)
+    freqai.dk.find_features(unfiltered_dataframe)
+    freqai.dk.find_labels(unfiltered_dataframe)
+    freqai.dk.get_unique_classes_from_labels(unfiltered_dataframe)
+    freqai.train(unfiltered_dataframe, freqai.dk.pair, freqai.dk)
+    assert all(
+        not col.startswith("constant_") for col in freqai.dk.training_features_list
+    )
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
