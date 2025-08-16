@@ -72,8 +72,7 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
         num_bag_sets = train_params.pop("num_bag_sets", None)
         time_limit = train_params.pop("time_limit", None)
 
-        predictor = predictor.fit(
-            train,
+        fit_args = dict(
             tuning_data=tuning_data,
             hyperparameter_tune_kwargs=hyperparameter_tune_kwargs,
             presets=presets,
@@ -83,4 +82,18 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
             time_limit=time_limit,
             **train_params,
         )
+
+        predictor = predictor.fit(train, **fit_args)
+
+        fi_threshold = self.ft_params.get("min_feature_importance", 0)
+        if fi_threshold > 0:
+            fi_df = predictor.feature_importance(train)
+            drop_features = fi_df[fi_df["importance"] < fi_threshold].index.tolist()
+            if drop_features:
+                train = train.drop(columns=drop_features)
+                if tuning_data is not None:
+                    tuning_data = tuning_data.drop(columns=drop_features)
+                predictor = TabularPredictor(label=dk.label_list[0], problem_type="regression")
+                predictor = predictor.fit(train, **fit_args)
+
         return predictor
