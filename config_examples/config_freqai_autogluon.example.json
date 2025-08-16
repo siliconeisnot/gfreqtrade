@@ -82,6 +82,9 @@
             "random_state": 1
         },
         "model_training_parameters": {
+            "time_limit": 600,
+            "num_bag_folds": 3,
+            "num_bag_sets": 2,
             "presets": "medium_quality",
             "eval_metric": "mean_absolute_error",
             "hyperparameter_tune_kwargs": {
