@@ -61,6 +61,7 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
         predictor = TabularPredictor(label=dk.label_list[0], problem_type="regression")
 
         train_params = self.model_training_parameters.copy()
+        # Pull tuning related settings so they can be forwarded explicitly
         hyperparameter_tune_kwargs = train_params.pop("hyperparameter_tune_kwargs", None)
         presets = train_params.pop("presets", None)
         eval_metric = train_params.pop("eval_metric", None)
