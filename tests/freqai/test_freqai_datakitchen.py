@@ -106,6 +106,35 @@ def test_make_train_test_datasets(mocker, freqai_conf):
     assert len(data_dictionary["train_features"].index) == 1916
 
 
+def test_make_train_test_datasets_with_feature_engineering(mocker, freqai_conf):
+    freqai_conf["freqai"]["feature_engineering"] = {"library": "tsfresh"}
+
+    import sys
+    import types
+
+    dummy = types.SimpleNamespace()
+
+    def fake_extract_features(df, column_id, column_sort, **kwargs):
+        return pd.DataFrame({"extra_feat": df["close"]})
+
+    dummy.extract_features = fake_extract_features
+    mocker.patch.dict(sys.modules, {"tsfresh": dummy})
+
+    dk = FreqaiDataKitchen(freqai_conf)
+
+    df = pd.DataFrame(
+        {
+            "date": pd.date_range("2020", periods=10, freq="1h"),
+            "close": range(10),
+        }
+    )
+    labels = pd.DataFrame({"label": range(10)})
+
+    data_dictionary = dk.make_train_test_datasets(df, labels)
+
+    assert "extra_feat" in data_dictionary["train_features"].columns
+
+
 @pytest.mark.parametrize("model", ["LightGBMRegressor"])
 def test_get_full_model_path(mocker, freqai_conf, model):
     freqai_conf.update({"freqaimodel": model})

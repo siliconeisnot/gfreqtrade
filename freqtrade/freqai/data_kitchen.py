@@ -135,6 +135,9 @@ class FreqaiDataKitchen:
         :param filtered_dataframe: cleaned dataframe ready to be split.
         :param labels: cleaned labels ready to be split.
         """
+        # Apply optional feature engineering pipeline before splitting the data
+        filtered_dataframe = self._apply_feature_engineering(filtered_dataframe)
+
         feat_dict = self.freqai_config["feature_parameters"]
 
         if "shuffle" not in self.freqai_config["data_split_parameters"]:
@@ -318,6 +321,47 @@ class FreqaiDataKitchen:
         }
 
         return self.data_dictionary
+
+    def _apply_feature_engineering(self, dataframe: DataFrame) -> DataFrame:
+        """Apply optional tsfresh/featuretools feature engineering pipeline."""
+
+        fe_cfg = self.freqai_config.get("feature_engineering")
+        if not fe_cfg:
+            return dataframe
+
+        library = fe_cfg.get("library", "").lower()
+        params = fe_cfg.get("parameters", {})
+
+        if library == "tsfresh":
+            try:
+                from tsfresh import extract_features
+            except Exception as exc:  # pragma: no cover - ImportError or others
+                raise OperationalException(
+                    "tsfresh is required for feature_engineering 'tsfresh'"  # noqa: TRY003
+                ) from exc
+            df_copy = dataframe.copy()
+            df_copy["_id"] = 0
+            extracted = extract_features(
+                df_copy,
+                column_id="_id",
+                column_sort=params.get("column_sort", "date"),
+                **params.get("tsfresh_kwargs", {}),
+            )
+            dataframe = pd.concat([dataframe.reset_index(drop=True), extracted.reset_index(drop=True)], axis=1)
+        elif library == "featuretools":
+            try:
+                import featuretools as ft
+            except Exception as exc:  # pragma: no cover
+                raise OperationalException(
+                    "featuretools is required for feature_engineering 'featuretools'"  # noqa: TRY003
+                ) from exc
+            es = ft.EntitySet(id="data")
+            df_copy = dataframe.reset_index(drop=True)
+            es.add_dataframe(dataframe_name="df", dataframe=df_copy, index="index")
+            feature_matrix, _ = ft.dfs(entityset=es, target_dataframe_name="df", **params)
+            dataframe = feature_matrix
+
+        return dataframe
 
     def split_timerange(
         self, tr: str, train_split: int = 28, bt_split: float = 7
