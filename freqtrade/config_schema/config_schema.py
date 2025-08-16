@@ -1137,6 +1137,14 @@ CONF_SCHEMA = {
                     "type": "boolean",
                     "default": False,
                 },
+                "feature_importance_threshold": {
+                    "description": (
+                        "Drop features with AutoGluon feature importance below this "
+                        "threshold and retrain the model."
+                    ),
+                    "type": "number",
+                    "default": 0,
+                },
                 "keras": {
                     "description": "Use Keras for model training.",
                     "type": "boolean",
