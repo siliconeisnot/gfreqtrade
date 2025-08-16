@@ -200,7 +200,7 @@ If this value is set, FreqAI will initially use the predictions from the trainin
 
 ## Using different prediction models
 
-FreqAI has multiple example prediction model libraries that are ready to be used as is via the flag `--freqaimodel`. These libraries include `CatBoost`, `LightGBM`, and `XGBoost` regression, classification, and multi-target models, and can be found in `freqai/prediction_models/`.
+FreqAI has multiple example prediction model libraries that are ready to be used as is via the flag `--freqaimodel`. These libraries include `CatBoost`, `LightGBM`, `XGBoost`, and `AutoGluon` regression, classification, and multi-target models, and can be found in `freqai/prediction_models/`.
 
 Regression and classification models differ in what targets they predict - a regression model will predict a target of continuous values, for example what price BTC will be at tomorrow, whilst a classifier will predict a target of discrete values, for example if the price of BTC will go up tomorrow or not. This means that you have to specify your targets differently depending on which model type you are using (see details [below](#setting-model-targets)).
 
@@ -209,6 +209,7 @@ All of the aforementioned model libraries implement gradient boosted decision tr
 * CatBoost: https://catboost.ai/en/docs/
 * LightGBM: https://lightgbm.readthedocs.io/en/v3.3.2/#
 * XGBoost: https://xgboost.readthedocs.io/en/stable/#
+* AutoGluon: https://auto.gluon.ai/stable/index.html
 
 There are also numerous online articles describing and comparing the algorithms. Some relatively lightweight examples would be [CatBoost vs. LightGBM vs. XGBoost — Which is the best algorithm?](https://towardsdatascience.com/catboost-vs-lightgbm-vs-xgboost-c80f40662924#:~:text=In%20CatBoost%2C%20symmetric%20trees%2C%20or,the%20same%20depth%20can%20differ.) and [XGBoost, LightGBM or CatBoost — which boosting algorithm should I use?](https://medium.com/riskified-technology/xgboost-lightgbm-or-catboost-which-boosting-algorithm-should-i-use-e7fda7bb36bc). Keep in mind that the performance of each model is highly dependent on the application and so any reported metrics might not be true for your particular use of the model.
 
