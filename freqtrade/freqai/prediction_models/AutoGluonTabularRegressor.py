@@ -1,6 +1,12 @@
 import logging
 from typing import Any
 
+
+try:  # pragma: no cover - optional dependency
+    import torch
+except ImportError:  # pragma: no cover - optional dependency
+    torch = None
+
 from freqtrade.freqai.base_models.BaseRegressionModel import BaseRegressionModel
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 
@@ -71,6 +77,12 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
         num_bag_folds = train_params.pop("num_bag_folds", None)
         num_bag_sets = train_params.pop("num_bag_sets", None)
         time_limit = train_params.pop("time_limit", None)
+        num_gpus = train_params.pop("num_gpus", 1 if torch and torch.cuda.is_available() else 0)
+        if num_gpus > 0 and not (torch and torch.cuda.is_available()):
+            logger.warning("num_gpus requested but CUDA is not available. Using CPU")
+            num_gpus = 0
+        ag_args_fit = train_params.pop("ag_args_fit", {})
+        ag_args_fit["num_gpus"] = num_gpus
 
         predictor = predictor.fit(
             train,
@@ -81,6 +93,7 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
             num_bag_folds=num_bag_folds,
             num_bag_sets=num_bag_sets,
             time_limit=time_limit,
+            ag_args_fit=ag_args_fit,
             **train_params,
         )
         return predictor

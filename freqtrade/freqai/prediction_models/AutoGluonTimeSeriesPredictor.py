@@ -1,6 +1,12 @@
 import logging
 from typing import Any
 
+
+try:  # pragma: no cover - optional dependency
+    import torch
+except ImportError:  # pragma: no cover - optional dependency
+    torch = None
+
 import numpy as np
 import pandas as pd
 
@@ -35,7 +41,14 @@ class AutoGluonTimeSeriesPredictor(BaseRegressionModel):
                 "'pip install autogluon.timeseries' to use AutoGluonTimeSeriesPredictor."
             ) from e
 
-        freq = self.model_training_parameters.pop("freq", None)
+        train_params = self.model_training_parameters.copy()
+        freq = train_params.pop("freq", None)
+        num_gpus = train_params.pop("num_gpus", 1 if torch and torch.cuda.is_available() else 0)
+        if num_gpus > 0 and not (torch and torch.cuda.is_available()):
+            logger.warning("num_gpus requested but CUDA is not available. Using CPU")
+            num_gpus = 0
+        ag_args_fit = train_params.pop("ag_args_fit", {})
+        ag_args_fit["num_gpus"] = num_gpus
 
         train = data_dictionary["train_features"].copy()
         train["target"] = data_dictionary["train_labels"].squeeze()
@@ -77,7 +90,10 @@ class AutoGluonTimeSeriesPredictor(BaseRegressionModel):
             freq=freq,
         )
         predictor = predictor.fit(
-            self.train_ts, tuning_data=tuning_ts, **self.model_training_parameters
+            self.train_ts,
+            tuning_data=tuning_ts,
+            ag_args_fit=ag_args_fit,
+            **train_params,
         )
         return predictor
 
