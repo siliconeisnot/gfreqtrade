@@ -80,7 +80,11 @@
             "test_size": 0.33,
             "random_state": 1
         },
-        "model_training_parameters": {}
+        "model_training_parameters": {},
+        "regime_detection": {
+            "enabled": true,
+            "n_clusters": 2
+        }
     },
     "bot_name": "",
     "force_entry_enable": true,

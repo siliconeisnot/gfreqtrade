@@ -35,6 +35,22 @@ A full example config is available in `config_examples/config_freqai.example.jso
 !!! Note
     The `identifier` is commonly overlooked by newcomers, however, this value plays an important role in your configuration. This value is a unique ID that you choose to describe one of your runs. Keeping it the same allows you to maintain crash resilience as well as faster backtesting. As soon as you want to try a new run (new features, new model, etc.), you should change this value (or delete the `user_data/models/unique-id` folder. More details available in the [parameter table](freqai-parameter-table.md#feature-parameters).
 
+### Regime detection
+
+FreqAI can train dedicated models for different market regimes detected through clustering. Activate the feature by adding:
+
+```json
+"freqai": {
+    "enabled": true,
+    "regime_detection": {
+        "enabled": true,
+        "n_clusters": 2
+    }
+}
+```
+
+When enabled, FreqAI segments the data using simple volatility and trend indicators and routes training and inference to the model of the detected regime.
+
 ## Building a FreqAI strategy
 
 The FreqAI strategy requires including the following lines of code in the standard [Freqtrade strategy](strategy-customization.md):
