@@ -36,6 +36,13 @@ class AutoGluonTimeSeriesPredictor(BaseRegressionModel):
             ) from e
 
         freq = self.model_training_parameters.pop("freq", None)
+        prediction_length = self.model_training_parameters.pop(
+            "prediction_length",
+            self.freqai_info.get("feature_parameters", {}).get("label_period_candles", 1),
+        )
+        known_covariates_names = self.model_training_parameters.pop(
+            "known_covariates_names", dk.training_features_list
+        )
 
         train = data_dictionary["train_features"].copy()
         train["target"] = data_dictionary["train_labels"].squeeze()
@@ -68,14 +75,13 @@ class AutoGluonTimeSeriesPredictor(BaseRegressionModel):
                 timestamp_column="timestamp",
             )
 
-        prediction_length = self.freqai_info.get("feature_parameters", {}).get(
-            "label_period_candles", 1
-        )
         predictor = TimeSeriesPredictor(
             prediction_length=prediction_length,
             target="target",
             freq=freq,
+            known_covariates_names=known_covariates_names,
         )
+        self.prediction_length = prediction_length
         predictor = predictor.fit(
             self.train_ts, tuning_data=tuning_ts, **self.model_training_parameters
         )
@@ -113,7 +119,9 @@ class AutoGluonTimeSeriesPredictor(BaseRegressionModel):
         )
 
         forecasts = self.model.predict(
-            self.train_ts, known_covariates=ts, prediction_length=len(ts)
+            self.train_ts,
+            known_covariates=ts,
+            prediction_length=self.prediction_length,
         )
         pred_df = forecasts.to_pandas().reset_index(level=0, drop=True)
         if "mean" in pred_df.columns:

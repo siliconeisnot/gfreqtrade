@@ -5,8 +5,8 @@ import talib.abstract as ta
 from pandas import DataFrame
 from technical import qtpylib
 
-from freqtrade.freqai.prediction_models.AutoGluonTabularRegressor import (  # noqa: F401
-    AutoGluonTabularRegressor,
+from freqtrade.freqai.prediction_models.AutoGluonTimeSeriesPredictor import (  # noqa: F401
+    AutoGluonTimeSeriesPredictor,
 )
 from freqtrade.strategy import IStrategy
 
@@ -16,12 +16,12 @@ logger = logging.getLogger(__name__)
 
 class FreqaiAutoGluonStrategy(IStrategy):
     """
-    Example strategy demonstrating how to use AutoGluonTabularRegressor with FreqAI.
+    Example strategy demonstrating how to use AutoGluonTimeSeriesPredictor with FreqAI.
 
     Launch with:
 
         freqtrade trade --config config_examples/config_freqai_autogluon.example.json \
-            --strategy FreqaiAutoGluonStrategy --freqaimodel AutoGluonTabularRegressor \
+            --strategy FreqaiAutoGluonStrategy --freqaimodel AutoGluonTimeSeriesPredictor \
             --strategy-path freqtrade/templates
 
     Warning! This is a showcase of functionality,
