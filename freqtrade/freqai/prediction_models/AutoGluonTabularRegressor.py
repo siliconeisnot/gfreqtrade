@@ -4,6 +4,7 @@ from typing import Any
 from freqtrade.freqai.base_models.BaseRegressionModel import BaseRegressionModel
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,7 +19,22 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
     """
 
     def fit(self, data_dictionary: dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
-        """Train an AutoGluon TabularPredictor."""
+        """Train an AutoGluon TabularPredictor.
+
+        Any argument accepted by :meth:`autogluon.tabular.TabularPredictor.fit`
+        can be provided via ``model_training_parameters`` in the FreqAI config.
+        Common options include ``time_limit`` (seconds to train), ``presets``
+        (predefined training configurations), ``hyperparameters`` (model
+        search space), ``eval_metric`` and ``ag_args_fit``.  Example::
+
+            "freqai": {
+                "model_training_parameters": {
+                    "time_limit": 600,
+                    "presets": "medium_quality",
+                    "hyperparameters": {"GBM": {}, "NN_TORCH": {}}
+                }
+            }
+        """
         try:
             from autogluon.tabular import TabularPredictor
         except ImportError as e:  # pragma: no cover - optional dependency
