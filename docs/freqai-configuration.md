@@ -220,6 +220,7 @@ The ``AutoGluonTabularRegressor`` exposes many options from
 * ``time_limit`` – maximum training time in seconds.
 * ``presets`` – AutoGluon preset string or list controlling model quality.
 * ``hyperparameters`` – dictionary defining the model search space.
+* ``hyperparameter_tune_kwargs`` – options for AutoGluon's hyperparameter tuner.
 * ``eval_metric`` – metric used to select the best models.
 
 Example::
@@ -228,6 +229,12 @@ Example::
         "model_training_parameters": {
             "time_limit": 600,
             "presets": "medium_quality",
+            "eval_metric": "mean_absolute_error",
+            "hyperparameter_tune_kwargs": {
+                "num_trials": 5,
+                "scheduler": "local",
+                "searcher": "auto"
+            },
             "hyperparameters": {"GBM": {}, "NN_TORCH": {}}
         }
     }

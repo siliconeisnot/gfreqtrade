@@ -24,13 +24,20 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
         Any argument accepted by :meth:`autogluon.tabular.TabularPredictor.fit`
         can be provided via ``model_training_parameters`` in the FreqAI config.
         Common options include ``time_limit`` (seconds to train), ``presets``
-        (predefined training configurations), ``hyperparameters`` (model
-        search space), ``eval_metric`` and ``ag_args_fit``.  Example::
+        (predefined training configurations), ``hyperparameters`` (model search
+        space), ``hyperparameter_tune_kwargs`` (search strategy), ``eval_metric``
+        and ``ag_args_fit``.  Example::
 
             "freqai": {
                 "model_training_parameters": {
                     "time_limit": 600,
                     "presets": "medium_quality",
+                    "eval_metric": "mean_absolute_error",
+                    "hyperparameter_tune_kwargs": {
+                        "num_trials": 5,
+                        "scheduler": "local",
+                        "searcher": "auto"
+                    },
                     "hyperparameters": {"GBM": {}, "NN_TORCH": {}}
                 }
             }
@@ -52,5 +59,18 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
             tuning_data[dk.label_list[0]] = data_dictionary["test_labels"].squeeze()
 
         predictor = TabularPredictor(label=dk.label_list[0], problem_type="regression")
-        predictor = predictor.fit(train, tuning_data=tuning_data, **self.model_training_parameters)
+
+        train_params = self.model_training_parameters.copy()
+        hyperparameter_tune_kwargs = train_params.pop("hyperparameter_tune_kwargs", None)
+        presets = train_params.pop("presets", None)
+        eval_metric = train_params.pop("eval_metric", None)
+
+        predictor = predictor.fit(
+            train,
+            tuning_data=tuning_data,
+            hyperparameter_tune_kwargs=hyperparameter_tune_kwargs,
+            presets=presets,
+            eval_metric=eval_metric,
+            **train_params,
+        )
         return predictor
