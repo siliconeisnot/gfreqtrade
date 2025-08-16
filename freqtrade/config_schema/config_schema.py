@@ -1109,6 +1109,17 @@ CONF_SCHEMA = {
                     ),
                     "type": "integer",
                 },
+                "quantiles": {
+                    "description": (
+                        "Quantile levels to forecast. Each value must be between 0 and 1."
+                    ),
+                    "type": "array",
+                    "items": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                    },
+                },
                 "data_kitchen_thread_count": {
                     "description": (
                         "Designate the number of threads you want to use for data processing "

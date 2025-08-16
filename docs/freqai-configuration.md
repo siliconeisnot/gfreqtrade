@@ -251,11 +251,15 @@ Example::
 The ``AutoGluonTimeSeriesPredictor`` wraps AutoGluon's
 ``TimeSeriesPredictor`` and automatically converts the data into a
 ``TimeSeriesDataFrame``.  In addition to the common settings above, it accepts
-``freq`` to specify the frequency of the time index.
+``freq`` to specify the frequency of the time index. Quantile forecasts can be
+requested by setting ``quantiles`` in the FreqAI configuration. The quantile
+values will be returned as additional columns named ``<label>_<quantile>`` (for
+example, ``&-s_close_0.1``).
 
 Example::
 
     "freqai": {
+        "quantiles": [0.1, 0.9],
         "model_training_parameters": {
             "freq": "1h",
             "time_limit": 600

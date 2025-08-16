@@ -37,6 +37,8 @@ def test_freqai_autogluon_timeseries_strategy_backtest(mocker, freqai_conf):
         dk.return_dataframe = dataframe.assign(
             **{
                 "&-s_close": np.where(np.arange(size) % 2 == 0, 0.05, -0.05),
+                "&-s_close_0.1": np.where(np.arange(size) % 2 == 0, 0.02, -0.08),
+                "&-s_close_0.9": np.where(np.arange(size) % 2 == 0, 0.08, -0.02),
                 "&-s_close_mean": 0.0,
                 "&-s_close_std": 0.01,
                 "do_predict": 1,

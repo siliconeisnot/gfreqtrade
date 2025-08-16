@@ -71,10 +71,12 @@ class AutoGluonTimeSeriesPredictor(BaseRegressionModel):
         prediction_length = self.freqai_info.get("feature_parameters", {}).get(
             "label_period_candles", 1
         )
+        quantiles = self.freqai_info.get("quantiles")
         predictor = TimeSeriesPredictor(
             prediction_length=prediction_length,
             target="target",
             freq=freq,
+            quantile_levels=quantiles if quantiles else None,
         )
         predictor = predictor.fit(
             self.train_ts, tuning_data=tuning_ts, **self.model_training_parameters
@@ -116,12 +118,20 @@ class AutoGluonTimeSeriesPredictor(BaseRegressionModel):
             self.train_ts, known_covariates=ts, prediction_length=len(ts)
         )
         pred_df = forecasts.to_pandas().reset_index(level=0, drop=True)
+        quantiles = self.freqai_info.get("quantiles", [])
+        for col in list(pred_df.columns):
+            inv_df, _, _ = dk.label_pipeline.inverse_transform(
+                pred_df[[col]].rename(columns={col: dk.label_list[0]})
+            )
+            pred_df[col] = inv_df[dk.label_list[0]]
         if "mean" in pred_df.columns:
             pred_df = pred_df.rename(columns={"mean": dk.label_list[0]})
+            for q in quantiles:
+                qstr = str(q)
+                if qstr in pred_df.columns:
+                    pred_df = pred_df.rename(columns={qstr: f"{dk.label_list[0]}_{qstr}"})
         else:
             pred_df.columns = dk.label_list
-
-        pred_df, _, _ = dk.label_pipeline.inverse_transform(pred_df)
 
         if dk.feature_pipeline["di"]:
             dk.DI_values = dk.feature_pipeline["di"].di_values

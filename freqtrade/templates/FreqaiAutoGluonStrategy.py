@@ -245,9 +245,17 @@ class FreqaiAutoGluonStrategy(IStrategy):
         return dataframe
 
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
+        lower = df["&-s_close_0.1"]
+        upper = df["&-s_close_0.9"]
+
+        df["long_entry"] = df["close"] * (1 + lower)
+        df["long_exit"] = df["close"] * (1 + upper)
+        df["short_entry"] = df["close"] * (1 + upper)
+        df["short_exit"] = df["close"] * (1 + lower)
+
         enter_long_conditions = [
             df["do_predict"] == 1,
-            df["&-s_close"] > 0,
+            lower > 0,
         ]
 
         if enter_long_conditions:
@@ -257,7 +265,7 @@ class FreqaiAutoGluonStrategy(IStrategy):
 
         enter_short_conditions = [
             df["do_predict"] == 1,
-            df["&-s_close"] < 0,
+            upper < 0,
         ]
 
         if enter_short_conditions:
