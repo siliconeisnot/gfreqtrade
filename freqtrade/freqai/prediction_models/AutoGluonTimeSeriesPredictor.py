@@ -35,7 +35,12 @@ class AutoGluonTimeSeriesPredictor(BaseRegressionModel):
                 "'pip install autogluon.timeseries' to use AutoGluonTimeSeriesPredictor."
             ) from e
 
-        freq = self.model_training_parameters.pop("freq", None)
+        train_params = self.model_training_parameters.copy()
+        freq = train_params.pop("freq", None)
+        hyperparameter_tune_kwargs = train_params.pop("hyperparameter_tune_kwargs", None)
+        presets = train_params.pop("presets", None)
+        eval_metric = train_params.pop("eval_metric", None)
+        time_limit = train_params.pop("time_limit", None)
 
         train = data_dictionary["train_features"].copy()
         train["target"] = data_dictionary["train_labels"].squeeze()
@@ -77,7 +82,13 @@ class AutoGluonTimeSeriesPredictor(BaseRegressionModel):
             freq=freq,
         )
         predictor = predictor.fit(
-            self.train_ts, tuning_data=tuning_ts, **self.model_training_parameters
+            self.train_ts,
+            tuning_data=tuning_ts,
+            hyperparameter_tune_kwargs=hyperparameter_tune_kwargs,
+            presets=presets,
+            eval_metric=eval_metric,
+            time_limit=time_limit,
+            **train_params,
         )
         return predictor
 
