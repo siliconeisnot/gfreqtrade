@@ -5,6 +5,9 @@ import talib.abstract as ta
 from pandas import DataFrame
 from technical import qtpylib
 
+from freqtrade.freqai.prediction_models.AutoGluonTabularRegressor import (  # noqa: F401
+    AutoGluonTabularRegressor,
+)
 from freqtrade.strategy import IStrategy
 
 
