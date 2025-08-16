@@ -127,3 +127,55 @@ def test_freqai_autogluon_strategy_model_creation(mocker, freqai_conf):
     for col in ["enter_long", "exit_long", "enter_short", "exit_short"]:
         assert col in df.columns
         assert df[col].notna().any()
+
+
+def test_autogluon_tabular_fi_threshold(mocker, freqai_conf):
+    import sys
+    import types
+    import pandas as pd
+
+    freqai_conf["freqai"]["model_training_parameters"]["fi_threshold"] = 0.05
+    freqai_conf["freqai"]["data_split_parameters"]["test_size"] = 0
+
+    fit_calls: list[list[str]] = []
+
+    class DummyPredictor:
+        def fit(self, train, tuning_data=None, **kwargs):
+            fit_calls.append(list(train.columns))
+            return self
+
+        def feature_importance(self, data):
+            return pd.DataFrame(
+                {"importance": [0.2, 0.01, 0.3]}, index=["f1", "f2", "f3"]
+            )
+
+    dummy_module = types.ModuleType("autogluon.tabular")
+    dummy_module.TabularPredictor = lambda label, problem_type: DummyPredictor()
+    dummy_autogluon = types.ModuleType("autogluon")
+    dummy_autogluon.tabular = dummy_module
+    mocker.patch.dict(sys.modules, {
+        "autogluon": dummy_autogluon,
+        "autogluon.tabular": dummy_module,
+    })
+
+    from freqtrade.freqai.prediction_models.AutoGluonTabularRegressor import (
+        AutoGluonTabularRegressor,
+    )
+    from types import SimpleNamespace
+
+    model = AutoGluonTabularRegressor(freqai_conf)
+
+    data_dictionary = {
+        "train_features": pd.DataFrame(
+            {"f1": [1, 2], "f2": [3, 4], "f3": [5, 6]}
+        ),
+        "train_labels": pd.DataFrame({"label": [1, 0]}),
+        "test_features": pd.DataFrame(),
+        "test_labels": pd.DataFrame(),
+    }
+    dk = SimpleNamespace(label_list=["label"], training_features_list=["f1", "f2", "f3"])
+
+    model.fit(data_dictionary, dk)
+
+    assert fit_calls == [["f1", "f2", "f3", "label"], ["f1", "f3", "label"]]
+    assert dk.training_features_list == ["f1", "f3"]

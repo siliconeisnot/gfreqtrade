@@ -71,6 +71,7 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
         num_bag_folds = train_params.pop("num_bag_folds", None)
         num_bag_sets = train_params.pop("num_bag_sets", None)
         time_limit = train_params.pop("time_limit", None)
+        fi_threshold = train_params.pop("fi_threshold", None)
 
         predictor = predictor.fit(
             train,
@@ -83,4 +84,39 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
             time_limit=time_limit,
             **train_params,
         )
+
+        if fi_threshold is not None:
+            fi_df = predictor.feature_importance(train)
+            # AutoGluon returns a DataFrame indexed by feature name
+            importances = fi_df["importance"] if "importance" in fi_df else fi_df.iloc[:, 0]
+            drop_list = importances[importances < fi_threshold].index.tolist()
+            if drop_list:
+                logger.info(
+                    "Dropping features below fi_threshold %s: %s",
+                    fi_threshold,
+                    drop_list,
+                )
+                dk.training_features_list = [
+                    f for f in dk.training_features_list if f not in drop_list
+                ]
+                train = train.drop(columns=drop_list)
+                data_dictionary["train_features"] = train
+                if tuning_data is not None:
+                    tuning_data = tuning_data.drop(columns=drop_list)
+                    data_dictionary["test_features"] = tuning_data
+                predictor = TabularPredictor(
+                    label=dk.label_list[0], problem_type="regression"
+                )
+                predictor = predictor.fit(
+                    train,
+                    tuning_data=tuning_data,
+                    hyperparameter_tune_kwargs=hyperparameter_tune_kwargs,
+                    presets=presets,
+                    eval_metric=eval_metric,
+                    num_bag_folds=num_bag_folds,
+                    num_bag_sets=num_bag_sets,
+                    time_limit=time_limit,
+                    **train_params,
+                )
+
         return predictor

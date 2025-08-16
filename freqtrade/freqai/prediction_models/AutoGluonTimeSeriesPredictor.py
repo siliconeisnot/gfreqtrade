@@ -35,7 +35,9 @@ class AutoGluonTimeSeriesPredictor(BaseRegressionModel):
                 "'pip install autogluon.timeseries' to use AutoGluonTimeSeriesPredictor."
             ) from e
 
-        freq = self.model_training_parameters.pop("freq", None)
+        train_params = self.model_training_parameters.copy()
+        freq = train_params.pop("freq", None)
+        fi_threshold = train_params.pop("fi_threshold", None)
 
         train = data_dictionary["train_features"].copy()
         train["target"] = data_dictionary["train_labels"].squeeze()
@@ -53,6 +55,7 @@ class AutoGluonTimeSeriesPredictor(BaseRegressionModel):
         )
 
         tuning_ts = None
+        test = None
         if self.freqai_info.get("data_split_parameters", {}).get("test_size", 0.1) != 0:
             test = data_dictionary["test_features"].copy()
             test["target"] = data_dictionary["test_labels"].squeeze()
@@ -76,9 +79,49 @@ class AutoGluonTimeSeriesPredictor(BaseRegressionModel):
             target="target",
             freq=freq,
         )
-        predictor = predictor.fit(
-            self.train_ts, tuning_data=tuning_ts, **self.model_training_parameters
-        )
+        predictor = predictor.fit(self.train_ts, tuning_data=tuning_ts, **train_params)
+
+        if fi_threshold is not None:
+            fi_df = predictor.feature_importance(self.train_ts)
+            importances = fi_df["importance"] if "importance" in fi_df else fi_df.iloc[:, 0]
+            drop_list = importances[importances < fi_threshold].index.tolist()
+            if drop_list:
+                logger.info(
+                    "Dropping features below fi_threshold %s: %s",
+                    fi_threshold,
+                    drop_list,
+                )
+                dk.training_features_list = [
+                    f for f in dk.training_features_list if f not in drop_list
+                ]
+                train = train.drop(columns=drop_list)
+                data_dictionary["train_features"] = train.drop(
+                    columns=["target", "item_id", "timestamp"]
+                )
+                self.train_ts = TimeSeriesDataFrame.from_data_frame(
+                    train,
+                    id_column="item_id",
+                    timestamp_column="timestamp",
+                )
+                if test is not None:
+                    test = test.drop(columns=drop_list)
+                    data_dictionary["test_features"] = test.drop(
+                        columns=["target", "item_id", "timestamp"]
+                    )
+                    tuning_ts = TimeSeriesDataFrame.from_data_frame(
+                        test,
+                        id_column="item_id",
+                        timestamp_column="timestamp",
+                    )
+                predictor = TimeSeriesPredictor(
+                    prediction_length=prediction_length,
+                    target="target",
+                    freq=freq,
+                )
+                predictor = predictor.fit(
+                    self.train_ts, tuning_data=tuning_ts, **train_params
+                )
+
         return predictor
 
     def predict(
