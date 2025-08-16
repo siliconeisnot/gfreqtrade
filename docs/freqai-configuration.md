@@ -221,6 +221,8 @@ The ``AutoGluonTabularRegressor`` exposes many options from
 * ``presets`` – AutoGluon preset string or list controlling model quality.
 * ``hyperparameters`` – dictionary defining the model search space.
 * ``eval_metric`` – metric used to select the best models.
+* ``num_gpus`` – number of GPUs to use. If not provided, FreqAI will
+  automatically enable one GPU when CUDA is available.
 
 Example::
 
@@ -228,7 +230,8 @@ Example::
         "model_training_parameters": {
             "time_limit": 600,
             "presets": "medium_quality",
-            "hyperparameters": {"GBM": {}, "NN_TORCH": {}}
+            "hyperparameters": {"GBM": {}, "NN_TORCH": {}},
+            "num_gpus": 1
         }
     }
 
