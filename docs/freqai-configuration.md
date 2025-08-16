@@ -222,6 +222,7 @@ The ``AutoGluonTabularRegressor`` exposes many options from
 * ``hyperparameters`` – dictionary defining the model search space.
 * ``hyperparameter_tune_kwargs`` – options for AutoGluon's hyperparameter tuner.
 * ``eval_metric`` – metric used to select the best models.
+* ``ag_args_fit`` – additional fit arguments. If ``num_gpus`` is omitted, all available GPUs will be used.
 
 Example::
 

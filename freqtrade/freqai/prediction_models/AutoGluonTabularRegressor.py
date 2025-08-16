@@ -60,7 +60,7 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
 
         predictor = TabularPredictor(label=dk.label_list[0], problem_type="regression")
 
-        train_params = self.model_training_parameters.copy()
+        train_params = self._configure_gpus(self.model_training_parameters.copy())
         hyperparameter_tune_kwargs = train_params.pop("hyperparameter_tune_kwargs", None)
         presets = train_params.pop("presets", None)
         eval_metric = train_params.pop("eval_metric", None)
@@ -74,3 +74,21 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
             **train_params,
         )
         return predictor
+
+    def _configure_gpus(self, train_params: dict) -> dict:
+        """Configure GPU usage for AutoGluon based on available resources."""
+        ag_args_fit = train_params.get("ag_args_fit", {}) or {}
+        if "num_gpus" not in ag_args_fit:
+            try:
+                from autogluon.common.utils.resource_utils import get_gpu_count
+
+                ag_args_fit["num_gpus"] = get_gpu_count()
+            except Exception:  # pragma: no cover - optional dependency
+                try:
+                    import torch
+
+                    ag_args_fit["num_gpus"] = torch.cuda.device_count()
+                except Exception:  # pragma: no cover - hardware optional
+                    ag_args_fit["num_gpus"] = 0
+            train_params["ag_args_fit"] = ag_args_fit
+        return train_params
