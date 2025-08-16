@@ -43,6 +43,7 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
             }
         """
         try:
+            from autogluon.common.utils.resource_utils import get_gpu_count
             from autogluon.tabular import TabularPredictor
         except ImportError as e:  # pragma: no cover - optional dependency
             raise ImportError(
@@ -61,6 +62,30 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
         predictor = TabularPredictor(label=dk.label_list[0], problem_type="regression")
 
         train_params = self.model_training_parameters.copy()
+
+        num_gpus = train_params.pop("num_gpus", None)
+
+        gpu_available = False
+        try:  # pragma: no cover - torch optional
+            import torch
+
+            gpu_available = torch.cuda.is_available()
+        except Exception:  # pragma: no cover - fallback to autogluon utility
+            try:
+                gpu_available = get_gpu_count() > 0
+            except Exception:  # pragma: no cover
+                gpu_available = False
+
+        if num_gpus is None:
+            num_gpus = 1 if gpu_available else 0
+
+        if num_gpus > 0 and gpu_available:
+            ag_args_fit = train_params.get("ag_args_fit", {})
+            ag_args_fit.setdefault("num_gpus", num_gpus)
+            train_params["ag_args_fit"] = ag_args_fit
+        elif num_gpus > 0:
+            logger.warning("num_gpus > 0 but no CUDA device detected - training will use CPU.")
+
         hyperparameter_tune_kwargs = train_params.pop("hyperparameter_tune_kwargs", None)
         presets = train_params.pop("presets", None)
         eval_metric = train_params.pop("eval_metric", None)

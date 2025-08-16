@@ -84,6 +84,7 @@
         "model_training_parameters": {
             "presets": "medium_quality",
             "eval_metric": "mean_absolute_error",
+            "num_gpus": 1,
             "hyperparameter_tune_kwargs": {
                 "num_trials": 5,
                 "scheduler": "local",

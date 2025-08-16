@@ -222,6 +222,7 @@ The ``AutoGluonTabularRegressor`` exposes many options from
 * ``hyperparameters`` – dictionary defining the model search space.
 * ``hyperparameter_tune_kwargs`` – options for AutoGluon's hyperparameter tuner.
 * ``eval_metric`` – metric used to select the best models.
+* ``num_gpus`` – number of GPUs to use. Set to ``0`` to force CPU training.
 
 Example::
 
@@ -230,6 +231,7 @@ Example::
             "time_limit": 600,
             "presets": "medium_quality",
             "eval_metric": "mean_absolute_error",
+            "num_gpus": 1,
             "hyperparameter_tune_kwargs": {
                 "num_trials": 5,
                 "scheduler": "local",
