@@ -214,14 +214,23 @@ All of the aforementioned model libraries implement gradient boosted decision tr
 ### AutoGluon training parameters
 
 The ``AutoGluonTabularRegressor`` exposes many options from
-``autogluon.tabular.TabularPredictor.fit``.  They can be configured through
-``freqai.model_training_parameters``. Common settings include:
+``autogluon.tabular.TabularPredictor.fit``. They are supplied to FreqAI
+through the ``model_training_parameters`` key of the config. FreqAI forwards
+this dictionary directly to AutoGluon's ``fit()`` call, so any valid argument
+for ``TabularPredictor.fit`` can be defined here. Common settings include:
 
-* ``time_limit`` – maximum training time in seconds.
-* ``presets`` – AutoGluon preset string or list controlling model quality.
-* ``hyperparameters`` – dictionary defining the model search space.
-* ``hyperparameter_tune_kwargs`` – options for AutoGluon's hyperparameter tuner.
-* ``eval_metric`` – metric used to select the best models.
+* ``time_limit`` – maximum training time in seconds. When the limit is
+  reached AutoGluon stops training and returns the best model found so far.
+* ``presets`` – preset string or list controlling model quality versus
+  training time, e.g. ``"medium_quality"`` or ``"best_quality"``.
+* ``hyperparameters`` – dictionary defining the model search space. Keys are
+  model names (``"GBM"``, ``"NN_TORCH"`` ...) and values contain their
+  hyperparameter options.
+* ``hyperparameter_tune_kwargs`` – options for AutoGluon's hyperparameter
+  tuner such as ``num_trials`` or scheduler configuration.
+* ``eval_metric`` – metric used to select the best models (for example
+  ``"mean_absolute_error"`` for regression or ``"accuracy"`` for
+  classification).
 
 Example::
 
@@ -238,6 +247,9 @@ Example::
             "hyperparameters": {"GBM": {}, "NN_TORCH": {}}
         }
     }
+
+The strategy can access these settings at run time via
+``self.freqai_info["model_training_parameters"]``.
 
 There are also numerous online articles describing and comparing the algorithms. Some relatively lightweight examples would be [CatBoost vs. LightGBM vs. XGBoost — Which is the best algorithm?](https://towardsdatascience.com/catboost-vs-lightgbm-vs-xgboost-c80f40662924#:~:text=In%20CatBoost%2C%20symmetric%20trees%2C%20or,the%20same%20depth%20can%20differ.) and [XGBoost, LightGBM or CatBoost — which boosting algorithm should I use?](https://medium.com/riskified-technology/xgboost-lightgbm-or-catboost-which-boosting-algorithm-should-i-use-e7fda7bb36bc). Keep in mind that the performance of each model is highly dependent on the application and so any reported metrics might not be true for your particular use of the model.
 
