@@ -51,6 +51,8 @@ class FreqaiAutoGluonStrategy(IStrategy):
     # this is the maximum period fed to talib (timeframe independent)
     startup_candle_count: int = 40
     can_short = True
+    # threshold at which predicted change triggers an exit
+    prediction_threshold: float = 0.05
 
     def feature_engineering_expand_all(
         self, dataframe: DataFrame, period: int, metadata: dict, **kwargs
@@ -245,7 +247,7 @@ class FreqaiAutoGluonStrategy(IStrategy):
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         enter_long_conditions = [
             df["do_predict"] == 1,
-            df["&-s_close"] > 0.01,
+            df["&-s_close"] > 0,
         ]
 
         if enter_long_conditions:
@@ -255,7 +257,7 @@ class FreqaiAutoGluonStrategy(IStrategy):
 
         enter_short_conditions = [
             df["do_predict"] == 1,
-            df["&-s_close"] < -0.01,
+            df["&-s_close"] < 0,
         ]
 
         if enter_short_conditions:
@@ -266,11 +268,18 @@ class FreqaiAutoGluonStrategy(IStrategy):
         return df
 
     def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
-        exit_long_conditions = [df["do_predict"] == 1, df["&-s_close"] < 0]
+        prediction = df["&-s_close"]
+        exit_long_conditions = [
+            df["do_predict"] == 1,
+            (prediction < 0) | (prediction > self.prediction_threshold),
+        ]
         if exit_long_conditions:
             df.loc[reduce(lambda x, y: x & y, exit_long_conditions), "exit_long"] = 1
 
-        exit_short_conditions = [df["do_predict"] == 1, df["&-s_close"] > 0]
+        exit_short_conditions = [
+            df["do_predict"] == 1,
+            (prediction > 0) | (prediction < -self.prediction_threshold),
+        ]
         if exit_short_conditions:
             df.loc[reduce(lambda x, y: x & y, exit_short_conditions), "exit_short"] = 1
 
