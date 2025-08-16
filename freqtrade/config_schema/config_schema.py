@@ -1142,6 +1142,25 @@ CONF_SCHEMA = {
                     "type": "boolean",
                     "default": False,
                 },
+                "feature_engineering": {
+                    "description": (
+                        "Optional feature engineering pipeline applied before the train/test "
+                        "split. Supports the 'tsfresh' and 'featuretools' libraries."
+                    ),
+                    "type": "object",
+                    "properties": {
+                        "library": {
+                            "description": "Library to use for feature engineering.",
+                            "type": "string",
+                            "enum": ["tsfresh", "featuretools"],
+                        },
+                        "parameters": {
+                            "description": "Parameters forwarded to the selected library.",
+                            "type": "object",
+                            "default": {},
+                        },
+                    },
+                },
                 "feature_parameters": {
                     "description": "The parameters used to engineer the feature set",
                     "type": "object",

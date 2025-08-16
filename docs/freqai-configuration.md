@@ -26,6 +26,24 @@ FreqAI is configured through the typical [Freqtrade config file](configuration.m
         },
         "data_split_parameters" : {
             "test_size": 0.25
+    }
+}
+```
+
+A feature engineering pipeline can optionally be enabled via `freqai.feature_engineering`.
+The pipeline runs before the train/test split and currently supports the
+[`tsfresh`](https://tsfresh.readthedocs.io/) and
+[`featuretools`](https://featuretools.alteryx.com/) libraries. An example
+configuration looks like this:
+
+```json
+    "freqai": {
+        ...,
+        "feature_engineering": {
+            "library": "tsfresh",
+            "parameters": {
+                "column_sort": "date"
+            }
         }
     }
 ```
