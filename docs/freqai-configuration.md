@@ -250,14 +250,18 @@ Example::
 
 The ``AutoGluonTimeSeriesPredictor`` wraps AutoGluon's
 ``TimeSeriesPredictor`` and automatically converts the data into a
-``TimeSeriesDataFrame``.  In addition to the common settings above, it accepts
-``freq`` to specify the frequency of the time index.
+``TimeSeriesDataFrame``. In addition to the common settings above, it accepts
+``freq`` to specify the frequency of the time index, ``prediction_length`` to
+control the forecast horizon, and ``known_covariates_names`` to explicitly
+define known covariate columns.
 
 Example::
 
     "freqai": {
         "model_training_parameters": {
             "freq": "1h",
+            "prediction_length": 24,
+            "known_covariates_names": ["feat1", "feat2"],
             "time_limit": 600
         }
     }
