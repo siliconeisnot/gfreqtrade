@@ -317,7 +317,8 @@ class IFreqaiModel(ABC):
             timestamp_model_id = int(tr_train.stopts)
             if dk.backtest_live_models:
                 timestamp_model_id = int(tr_backtest.startts)
-
+            df_regime = dataframe.loc[dataframe["date"] < tr_train.stopdt, :]
+            dk.detect_regime(df_regime)
             dk.set_paths(pair, timestamp_model_id)
 
             dk.set_new_model_names(pair, timestamp_model_id)
@@ -389,6 +390,7 @@ class IFreqaiModel(ABC):
                 else:
                     self.model = self.dd.load_data(pair, dk)
 
+                dk.detect_regime(dataframe_backtest)
                 pred_df, do_preds = self.predict(dataframe_backtest, dk)
                 append_df = dk.get_predictions_to_append(pred_df, do_preds, dataframe_backtest)
                 dk.append_predictions(append_df)
@@ -477,6 +479,7 @@ class IFreqaiModel(ABC):
         if pair not in self.dd.model_return_values:
             # first predictions are made on entire historical candle set coming from strategy. This
             # allows FreqUI to show full return values.
+            dk.detect_regime(dataframe)
             pred_df, do_preds = self.predict(dataframe, dk)
             if pair not in self.dd.historic_predictions:
                 self.set_initial_historic_predictions(pred_df, dk, pair, dataframe)
@@ -496,7 +499,9 @@ class IFreqaiModel(ABC):
         else:
             # remaining predictions are made only on the most recent candles for performance and
             # historical accuracy reasons.
-            pred_df, do_preds = self.predict(dataframe.iloc[-self.CONV_WIDTH :], dk, first=False)
+            recent_df = dataframe.iloc[-self.CONV_WIDTH :]
+            dk.detect_regime(recent_df)
+            pred_df, do_preds = self.predict(recent_df, dk, first=False)
 
         if self.freqai_info.get("fit_live_predictions_candles", 0) and self.live:
             self.fit_live_predictions(dk, pair)
@@ -625,6 +630,8 @@ class IFreqaiModel(ABC):
         # find the features indicated by strategy and store in datakitchen
         dk.find_features(unfiltered_dataframe)
         dk.find_labels(unfiltered_dataframe)
+
+        dk.detect_regime(unfiltered_dataframe)
 
         self.tb_logger = get_tb_logger(self.dd.model_type, dk.data_path, self.activate_tensorboard)
         model = self.train(unfiltered_dataframe, pair, dk)

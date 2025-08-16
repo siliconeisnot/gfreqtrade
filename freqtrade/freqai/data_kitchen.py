@@ -20,6 +20,7 @@ from freqtrade.constants import DOCS_LINK, ORDERFLOW_ADDED_COLUMNS, Config
 from freqtrade.data.converter import reduce_dataframe_footprint
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
+from freqtrade.freqai.regime.regime_detector import RegimeDetector
 from freqtrade.strategy import merge_informative_pair
 from freqtrade.strategy.interface import IStrategy
 
@@ -84,6 +85,12 @@ class FreqaiDataKitchen:
         self.feature_pipeline = Pipeline()
         self.label_pipeline = Pipeline()
         self.DI_values: npt.NDArray = np.array([])
+        self.regime_config: dict[str, Any] = self.freqai_config.get("regime_detection", {})
+        self.regime_detector: RegimeDetector | None = None
+        self.current_regime: int = 0
+        if self.regime_config.get("enabled", False):
+            rd_params = {k: v for k, v in self.regime_config.items() if k != "enabled"}
+            self.regime_detector = RegimeDetector(**rd_params)
 
         if not self.live:
             self.full_path = self.get_full_models_path(self.config)
@@ -125,6 +132,32 @@ class FreqaiDataKitchen:
 
         return
 
+    def detect_regime(self, dataframe: DataFrame) -> int:
+        """Detect and store the current market regime for ``dataframe``."""
+        if not self.regime_config.get("enabled", False) or self.regime_detector is None:
+            self.current_regime = 0
+            return self.current_regime
+        regimes = self.regime_detector.detect(dataframe)
+        if not regimes.empty:
+            self.current_regime = int(regimes.iloc[-1])
+        else:
+            self.current_regime = 0
+        return self.current_regime
+
+    def _apply_regime_filter(
+        self, filtered_dataframe: DataFrame, labels: DataFrame
+    ) -> tuple[DataFrame, DataFrame]:
+        """Filter dataframe and labels to the current regime if enabled."""
+        if not self.regime_config.get("enabled", False) or self.regime_detector is None:
+            return filtered_dataframe, labels
+        regimes = self.regime_detector.detect(filtered_dataframe)
+        if not regimes.empty:
+            if self.current_regime is None:
+                self.current_regime = int(regimes.iloc[-1])
+            mask = regimes == self.current_regime
+            return filtered_dataframe.loc[mask], labels.loc[mask]
+        return filtered_dataframe, labels
+
     def make_train_test_datasets(
         self, filtered_dataframe: DataFrame, labels: DataFrame
     ) -> dict[Any, Any]:
@@ -142,6 +175,8 @@ class FreqaiDataKitchen:
 
         if "shuffle" not in self.freqai_config["data_split_parameters"]:
             self.freqai_config["data_split_parameters"].update({"shuffle": False})
+
+        filtered_dataframe, labels = self._apply_regime_filter(filtered_dataframe, labels)
 
         weights: npt.ArrayLike
         if feat_dict.get("weight_factor", 0) > 0:
@@ -633,9 +668,14 @@ class FreqaiDataKitchen:
 
     def set_new_model_names(self, pair: str, timestamp_id: int):
         coin, _ = pair.split("/")
-        self.data_path = Path(self.full_path / f"sub-train-{pair.split('/')[0]}_{timestamp_id}")
+        regime_suffix = (
+            f"_r{self.current_regime}" if self.regime_config.get("enabled", False) else ""
+        )
+        self.data_path = Path(
+            self.full_path / f"sub-train-{pair.split('/')[0]}_{timestamp_id}{regime_suffix}"
+        )
 
-        self.model_filename = f"cb_{coin.lower()}_{timestamp_id}"
+        self.model_filename = f"cb_{coin.lower()}_{timestamp_id}{regime_suffix}"
 
     def set_all_pairs(self) -> None:
         self.all_pairs = copy.deepcopy(
