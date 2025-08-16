@@ -23,7 +23,8 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
 
         Any argument accepted by :meth:`autogluon.tabular.TabularPredictor.fit`
         can be provided via ``model_training_parameters`` in the FreqAI config.
-        Common options include ``time_limit`` (seconds to train), ``presets``
+        Common options include ``time_limit`` (seconds to train), ``num_bag_folds``
+        (bagging folds), ``num_bag_sets`` (repeats of bagging), ``presets``
         (predefined training configurations), ``hyperparameters`` (model search
         space), ``hyperparameter_tune_kwargs`` (search strategy), ``eval_metric``
         and ``ag_args_fit``.  Example::
@@ -31,6 +32,8 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
             "freqai": {
                 "model_training_parameters": {
                     "time_limit": 600,
+                    "num_bag_folds": 3,
+                    "num_bag_sets": 2,
                     "presets": "medium_quality",
                     "eval_metric": "mean_absolute_error",
                     "hyperparameter_tune_kwargs": {
@@ -64,6 +67,9 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
         hyperparameter_tune_kwargs = train_params.pop("hyperparameter_tune_kwargs", None)
         presets = train_params.pop("presets", None)
         eval_metric = train_params.pop("eval_metric", None)
+        num_bag_folds = train_params.pop("num_bag_folds", None)
+        num_bag_sets = train_params.pop("num_bag_sets", None)
+        time_limit = train_params.pop("time_limit", None)
 
         predictor = predictor.fit(
             train,
@@ -71,6 +77,9 @@ class AutoGluonTabularRegressor(BaseRegressionModel):
             hyperparameter_tune_kwargs=hyperparameter_tune_kwargs,
             presets=presets,
             eval_metric=eval_metric,
+            num_bag_folds=num_bag_folds,
+            num_bag_sets=num_bag_sets,
+            time_limit=time_limit,
             **train_params,
         )
         return predictor
