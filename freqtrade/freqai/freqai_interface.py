@@ -394,7 +394,17 @@ class IFreqaiModel(ABC):
                 dk.append_predictions(append_df)
                 dk.save_backtesting_prediction(append_df)
 
+                actual = dataframe_backtest[dk.label_list].to_numpy()
+                predicted = pred_df[dk.label_list].to_numpy()
+                dk.walkforward_performance.append(
+                    float(np.nanmean((actual - predicted) ** 2))
+                )
+
         self.backtesting_fit_live_predictions(dk)
+        if dk.walkforward_performance:
+            dk.aggregated_performance = float(
+                np.nanmean(dk.walkforward_performance)
+            )
         dk.fill_predictions(dataframe)
 
         return dk

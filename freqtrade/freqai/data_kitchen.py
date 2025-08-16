@@ -84,6 +84,8 @@ class FreqaiDataKitchen:
         self.feature_pipeline = Pipeline()
         self.label_pipeline = Pipeline()
         self.DI_values: npt.NDArray = np.array([])
+        self.walkforward_performance: list[float] = []
+        self.aggregated_performance: float = 0.0
 
         if not self.live:
             self.full_path = self.get_full_models_path(self.config)
@@ -92,11 +94,13 @@ class FreqaiDataKitchen:
                 self.full_timerange = self.create_fulltimerange(
                     self.config["timerange"], self.freqai_config.get("train_period_days", 0)
                 )
-                (self.training_timeranges, self.backtesting_timeranges) = self.split_timerange(
+                tr_splits = self.split_timerange(
                     self.full_timerange,
                     config["freqai"]["train_period_days"],
                     config["freqai"]["backtest_period_days"],
                 )
+                self.training_timeranges = [tr for tr, _ in tr_splits]
+                self.backtesting_timeranges = [bt for _, bt in tr_splits]
 
         self.data["extra_returns_per_train"] = self.freqai_config.get("extra_returns_per_train", {})
         if not self.freqai_config.get("data_kitchen_thread_count", 0):
@@ -365,14 +369,13 @@ class FreqaiDataKitchen:
 
     def split_timerange(
         self, tr: str, train_split: int = 28, bt_split: float = 7
-    ) -> tuple[list, list]:
+    ) -> list[tuple[TimeRange, TimeRange]]:
         """
-        Function which takes a single time range (tr) and splits it
-        into sub timeranges to train and backtest on based on user input
-        tr: str, full timerange to train on
-        train_split: the period length for the each training (days). Specified in user
-        configuration file
-        bt_split: the backtesting length (days). Specified in user configuration file
+        Split a full timerange into multiple training/backtesting timerange tuples.
+        :param tr: Full timerange to train on
+        :param train_split: Training window length in days
+        :param bt_split: Backtesting window length in days
+        :return: List of (train_timerange, backtest_timerange) tuples
         """
 
         if not isinstance(train_split, int) or train_split < 1:
@@ -389,10 +392,7 @@ class FreqaiDataKitchen:
         timerange_train = copy.deepcopy(full_timerange)
         timerange_backtest = copy.deepcopy(full_timerange)
 
-        tr_training_list = []
-        tr_backtesting_list = []
-        tr_training_list_timerange = []
-        tr_backtesting_list_timerange = []
+        splits: list[tuple[TimeRange, TimeRange]] = []
         first = True
 
         while True:
@@ -401,8 +401,7 @@ class FreqaiDataKitchen:
             timerange_train.stopts = timerange_train.startts + train_period_days
 
             first = False
-            tr_training_list.append(timerange_train.timerange_str)
-            tr_training_list_timerange.append(copy.deepcopy(timerange_train))
+            train_tr = copy.deepcopy(timerange_train)
 
             # associated backtest period
             timerange_backtest.startts = timerange_train.stopts
@@ -411,16 +410,15 @@ class FreqaiDataKitchen:
             if timerange_backtest.stopts > config_timerange.stopts:
                 timerange_backtest.stopts = config_timerange.stopts
 
-            tr_backtesting_list.append(timerange_backtest.timerange_str)
-            tr_backtesting_list_timerange.append(copy.deepcopy(timerange_backtest))
+            backtest_tr = copy.deepcopy(timerange_backtest)
+            splits.append((train_tr, backtest_tr))
 
             # ensure we are predicting on exactly same amount of data as requested by user defined
             #  --timerange
             if timerange_backtest.stopts == config_timerange.stopts:
                 break
 
-        # print(tr_training_list, tr_backtesting_list)
-        return tr_training_list_timerange, tr_backtesting_list_timerange
+        return splits
 
     def slice_dataframe(self, timerange: TimeRange, df: DataFrame) -> DataFrame:
         """

@@ -55,8 +55,8 @@ def test_split_timerange(
 ):
     freqai_conf.update({"timerange": "20220101-20220401"})
     dk = get_patched_data_kitchen(mocker, freqai_conf)
-    tr_list, bt_list = dk.split_timerange(timerange, train_period_days, backtest_period_days)
-    assert len(tr_list) == len(bt_list) == expected_result
+    splits = dk.split_timerange(timerange, train_period_days, backtest_period_days)
+    assert len(splits) == expected_result
 
     with pytest.raises(
         OperationalException, match=r"train_period_days must be an integer greater than 0."
