@@ -240,6 +240,7 @@ The ``AutoGluonTabularRegressor`` exposes many options from
 * ``num_bag_sets`` – number of bagging repeats.
 * ``presets`` – AutoGluon preset string or list controlling model quality.
 * ``hyperparameters`` – dictionary defining the model search space.
+* ``num_gpus`` – number of GPUs to use for training.
 * ``hyperparameter_tune_kwargs`` – options for AutoGluon's hyperparameter tuner.
 * ``eval_metric`` – metric used to select the best models.
 
@@ -254,6 +255,7 @@ Example::
             "num_bag_folds": 3,
             "num_bag_sets": 2,
             "presets": "medium_quality",
+            "num_gpus": 1,
             "eval_metric": "mean_absolute_error",
             "hyperparameter_tune_kwargs": {
                 "num_trials": 5,
